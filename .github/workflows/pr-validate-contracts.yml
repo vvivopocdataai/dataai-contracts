@@ -14,6 +14,7 @@ on:
 permissions:
   id-token: write   # necessario para o login OIDC (azure/login) sem secrets
   contents: read
+  pull-requests: read   # necessario para o gitleaks-action listar commits da PR
 
 env:
   AZURE_EVENTHUB_NAMESPACE: eh-dataai-vivopoc.servicebus.windows.net
