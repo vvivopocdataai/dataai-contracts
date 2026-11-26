@@ -1,0 +1,53 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: crm.party_individual.v1
+name: IndividualCreateEvent
+version: 1.0.0
+status: draft
+domain: crm
+owner: data-steward-crm@vivo.example
+description: "Pessoa fisica cadastrada no CRM do canal digital. Entidade TM Forum: Individual (TMF632)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: crm_digital.party_individual
+  tableFingerprint: sha256:75f37ee89a67bc6f5867ef9b1e2526053d7d0dc5ee14aa38f18d428a43d88b24  # sha256 do arquivo .avsc (schemas/crm/individual-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/crm/individual-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-crm' e apenas o agrupamento logico/topico
+    schemaId: cd86788a46ce40849d73ae16bd438cdc
+    compatibility: backward
+  properties:
+    - name: id
+      classification: internal
+    - name: given_name
+      classification: confidential
+    - name: family_name
+      classification: confidential
+    - name: birth_date
+      classification: confidential
+    - name: cpf
+      classification: confidential
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-crm
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - given_name
+    - family_name
+    - birth_date
+    - cpf
+support:
+  approval:
+    requiredReviewers: [data-steward-crm]
+    humanInTheLoop: true

@@ -1,0 +1,48 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: tmf-productinventory.tb_simcard.v1
+name: SimCardCreateEvent
+version: 1.0.0
+status: draft
+domain: tmf-productinventory
+owner: data-steward-tmf-productinventory@vivo.example
+description: "Chip (SIM card) associado a uma linha. Entidade TM Forum: Resource (TMF639)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ora1.sql
+  table: ATEND_PROD.TB_SIMCARD
+  tableFingerprint: sha256:0177b07959f2063f7ef30459398471c301f3b54108830a4f8c285cc7a8b0e5e6  # sha256 do arquivo .avsc (schemas/tmf-productinventory/simcard-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/tmf-productinventory/simcard-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-tmf-productinventory' e apenas o agrupamento logico/topico
+    schemaId: d3e4c3ed5c6c465fa74f9fa8ea3c370b
+    compatibility: backward
+  properties:
+    - name: NR_ICCID
+      classification: internal
+    - name: NR_IMSI
+      classification: confidential
+    - name: CD_ASSIN
+      classification: internal
+    - name: DT_ATIV
+      classification: internal
+    - name: ST_SIM
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-tmf-productinventory
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - NR_IMSI
+support:
+  approval:
+    requiredReviewers: [data-steward-tmf-productinventory]
+    humanInTheLoop: true

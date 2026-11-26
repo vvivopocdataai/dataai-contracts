@@ -1,0 +1,51 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: billing.item_fatura.v1
+name: ItemFaturaCreateEvent
+version: 1.0.0
+status: draft
+domain: billing
+owner: data-steward-billing@vivo.example
+description: "Item de cobranca de uma fatura (mensalidade, uso, servico ou desconto). Entidade TM Forum: AppliedCustomerBillingRate (TMF678)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: billing.item_fatura
+  tableFingerprint: sha256:f594a4af198350638ce072dc3afbe7040db2594c3d7ee24c247e23130d9b38d8  # sha256 do arquivo .avsc (schemas/billing/item-fatura-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/billing/item-fatura-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-billing' e apenas o agrupamento logico/topico
+    schemaId: e72ebd7bef0945bb95d56104694eaabf
+    compatibility: backward
+  properties:
+    - name: id_item
+      classification: internal
+    - name: id_fatura
+      classification: internal
+    - name: ds_item
+      classification: internal
+    - name: tp_item
+      classification: internal
+    - name: vl_item
+      classification: internal
+    - name: dt_item
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-billing
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-billing]
+    humanInTheLoop: true

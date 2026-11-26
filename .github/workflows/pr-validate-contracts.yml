@@ -1,0 +1,135 @@
+name: pr-validate-contracts
+
+# Dispara em PRs que alteram contratos ODCS ou schemas Avro.
+# Shift-left: valida localmente (JSON/YAML/Avro) e faz dry-run real contra o
+# Azure Schema Registry via OIDC (Entra ID Workload Identity Federation, sem
+# secrets) antes de permitir o merge.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "contracts/**"
+
+permissions:
+  id-token: write   # necessario para o login OIDC (azure/login) sem secrets
+  contents: read
+
+env:
+  AZURE_EVENTHUB_NAMESPACE: eh-dataai-vivopoc.servicebus.windows.net
+  SCHEMA_REGISTRY_GROUP: application-schemas
+  PUBSUB_REPO: vvivopocdataai/dataai-pubsub
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout deste repo (contracts)
+        uses: actions/checkout@v4
+
+      - name: Checkout do repo dataai-pubsub (schemas fisicos, so leitura)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.PUBSUB_REPO }}
+          path: pubsub
+          ssh-key: ${{ secrets.PUBSUB_DEPLOY_KEY }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias de validacao
+        run: pip install --quiet fastavro pyyaml azure-identity azure-schemaregistry
+
+      - name: Validar schemas Avro (.avsc) -- JSON valido + parse Avro estrito
+        run: |
+          python3 - <<'PYEOF'
+          import json, glob, sys
+          from fastavro import parse_schema
+
+          failed = False
+          for f in sorted(glob.glob("pubsub/schemas/**/*.avsc", recursive=True)):
+              try:
+                  with open(f) as fh:
+                      data = json.load(fh)
+                  parse_schema(data)
+                  print(f"OK   {f}")
+              except Exception as e:
+                  print(f"FAIL {f}: {type(e).__name__}: {e}")
+                  failed = True
+          sys.exit(1 if failed else 0)
+          PYEOF
+
+      - name: Validar contratos ODCS (.odcs.yaml) -- campos obrigatorios + classificacao PII
+        run: |
+          python3 - <<'PYEOF'
+          import yaml, glob, sys
+
+          REQUIRED = ["apiVersion", "kind", "id", "name", "version", "status",
+                      "domain", "owner", "description", "sourceModelRef",
+                      "schema", "servers", "security", "support"]
+          failed = False
+          for f in sorted(glob.glob("contracts/**/*.odcs.yaml", recursive=True)):
+              with open(f) as fh:
+                  data = yaml.safe_load(fh)
+              missing = [k for k in REQUIRED if k not in data]
+              if missing:
+                  print(f"FAIL {f}: campos obrigatorios ausentes: {missing}")
+                  failed = True
+                  continue
+              pii_declared = set(data.get("security", {}).get("piiFields") or [])
+              props = data.get("schema", {}).get("properties") or []
+              pii_classified = {p["name"] for p in props if p.get("classification") == "confidential"}
+              if pii_declared != pii_classified:
+                  print(f"FAIL {f}: security.piiFields {pii_declared} nao bate com "
+                        f"properties classification=confidential {pii_classified}")
+                  failed = True
+                  continue
+              print(f"OK   {f}")
+          sys.exit(1 if failed else 0)
+          PYEOF
+
+      - name: Secret scanning (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login no Azure via OIDC (Workload Identity Federation -- sem secrets)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CICD_MI_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Dry-run de registro no Schema Registry (nao incrementa versao se identico)
+        run: |
+          python3 - <<'PYEOF'
+          import json, glob, sys, subprocess
+          from azure.identity import AzureCliCredential
+          from azure.schemaregistry import SchemaRegistryClient
+
+          credential = AzureCliCredential()
+          client = SchemaRegistryClient(
+              fully_qualified_namespace="${{ env.AZURE_EVENTHUB_NAMESPACE }}",
+              credential=credential,
+          )
+          failed = False
+          with client:
+              for f in sorted(glob.glob("pubsub/schemas/**/*.avsc", recursive=True)):
+                  with open(f) as fh:
+                      definition = fh.read()
+                      data = json.loads(definition)
+                  fqn = f'{data["namespace"]}.{data["name"]}'
+                  try:
+                      props = client.register_schema(
+                          group_name="${{ env.SCHEMA_REGISTRY_GROUP }}",
+                          name=fqn,
+                          definition=definition,
+                          format="Avro",
+                      )
+                      print(f"OK   {fqn} -> schemaId={props.id} version={props.version}")
+                  except Exception as e:
+                      print(f"FAIL {fqn}: {type(e).__name__}: {e}")
+                      failed = True
+          sys.exit(1 if failed else 0)
+          PYEOF

@@ -1,0 +1,52 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: arrecadacao.forma_pgto.v1
+name: PaymentMethodCreateEvent
+version: 1.0.0
+status: draft
+domain: arrecadacao
+owner: data-steward-arrecadacao@vivo.example
+description: "Forma de pagamento associada a uma conta de cobranca (boleto, debito, cartao ou PIX). Entidade TM Forum: PaymentMethod (TMF670)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: arrecadacao.forma_pgto
+  tableFingerprint: sha256:1e4a5ae15c66a451fa8362084122cadd53c1e1a6b61dc4b368d6bfe0fc62e5d2  # sha256 do arquivo .avsc (schemas/arrecadacao/payment-method-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/arrecadacao/payment-method-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-arrecadacao' e apenas o agrupamento logico/topico
+    schemaId: 7a35aafd240142dfaf735ddbf3c76d00
+    compatibility: backward
+  properties:
+    - name: id_forma
+      classification: internal
+    - name: tp_forma
+      classification: internal
+    - name: nr_final_cartao
+      classification: confidential
+    - name: ds_bandeira
+      classification: internal
+    - name: fl_preferencial
+      classification: internal
+    - name: id_conta
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-arrecadacao
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - nr_final_cartao
+support:
+  approval:
+    requiredReviewers: [data-steward-arrecadacao]
+    humanInTheLoop: true

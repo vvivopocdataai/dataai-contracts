@@ -1,0 +1,49 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: tmf-productcatalog.tb_plano.v1
+name: PlanoCreateEvent
+version: 1.0.0
+status: draft
+domain: tmf-productcatalog
+owner: data-steward-tmf-productcatalog@vivo.example
+description: "Oferta comercial: plano recorrente (pre-pago, pos-pago ou controle). Entidade TM Forum: ProductOffering (TMF620)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ora1.sql
+  table: ATEND_PROD.TB_PLANO
+  tableFingerprint: sha256:5cbf43ea75b9416c9e25d092f40775f910039786ee909fc18e221950be930121  # sha256 do arquivo .avsc (schemas/tmf-productcatalog/plano-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/tmf-productcatalog/plano-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-tmf-productcatalog' e apenas o agrupamento logico/topico
+    schemaId: cc87c92fbf96404e8690f2a05ade3c75
+    compatibility: forward
+  properties:
+    - name: CD_PLANO
+      classification: internal
+    - name: DS_PLANO
+      classification: internal
+    - name: TP_PLANO
+      classification: internal
+    - name: VL_MENSAL
+      classification: internal
+    - name: DT_INI_VIG
+      classification: internal
+    - name: DT_FIM_VIG
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-tmf-productcatalog
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-tmf-productcatalog]
+    humanInTheLoop: true

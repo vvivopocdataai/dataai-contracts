@@ -1,0 +1,64 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: notificacao.envio_comunicacao.v1
+name: CommunicationSentEvent
+version: 1.0.0
+status: draft
+domain: notificacao
+owner: data-steward-notificacao@vivo.example
+description: "Comunicacao enviada ao cliente e seu status de entrega. Entidade TM Forum: CommunicationMessage (TMF681)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: notificacao.envio_comunicacao
+  tableFingerprint: sha256:4714965fd3deceb718cf799cd4103d1ebf901ccc16a7ad28cf903d7f337a5de5  # sha256 do arquivo .avsc (schemas/notificacao/communication-sent-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/notificacao/communication-sent-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-notificacao' e apenas o agrupamento logico/topico
+    schemaId: 95094092c35e4c428fff98bcbd60d4b7
+    compatibility: backward
+  properties:
+    - name: id_envio
+      classification: internal
+    - name: id_template
+      classification: internal
+    - name: tp_canal
+      classification: internal
+    - name: ds_assunto
+      classification: internal
+    - name: ds_conteudo
+      classification: internal
+    - name: ds_destino
+      classification: confidential
+    - name: cd_cli
+      classification: internal
+    - name: dt_envio
+      classification: internal
+    - name: dt_entrega
+      classification: internal
+    - name: st_entrega
+      classification: internal
+    - name: qt_tentativas
+      classification: internal
+    - name: nr_fatura
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-notificacao
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - ds_destino
+support:
+  approval:
+    requiredReviewers: [data-steward-notificacao]
+    humanInTheLoop: true

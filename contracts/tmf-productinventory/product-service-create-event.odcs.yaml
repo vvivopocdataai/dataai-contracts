@@ -1,0 +1,49 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: tmf-productinventory.tb_serv_assin.v1
+name: ServAssinCreateEvent
+version: 1.0.0
+status: draft
+domain: tmf-productinventory
+owner: data-steward-tmf-productinventory@vivo.example
+description: "Servico adicional contratado e associado a uma linha. Entidade TM Forum: Product, relacionado via productRelationship (TMF637)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ora1.sql
+  table: ATEND_PROD.TB_SERV_ASSIN
+  tableFingerprint: sha256:2ca1dfd295de076a208ec8cac9a96332d7a82ba5801f58d97327804c72cb4ec5  # sha256 do arquivo .avsc (schemas/tmf-productinventory/product-service-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/tmf-productinventory/product-service-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-tmf-productinventory' e apenas o agrupamento logico/topico
+    schemaId: e2e220f299c64fc7bd2db5a56a795e10
+    compatibility: backward
+  properties:
+    - name: ID_SERV_ASSIN
+      classification: internal
+    - name: CD_ASSIN
+      classification: internal
+    - name: CD_SERV
+      classification: internal
+    - name: DT_ATIV
+      classification: internal
+    - name: DT_DESATIV
+      classification: internal
+    - name: ST
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-tmf-productinventory
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-tmf-productinventory]
+    humanInTheLoop: true

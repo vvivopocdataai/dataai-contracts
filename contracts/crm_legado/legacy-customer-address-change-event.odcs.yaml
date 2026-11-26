@@ -1,0 +1,60 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: crm_legado.tb_end_cli.v1
+name: LegacyCustomerAddressChangeEvent
+version: 1.0.0
+status: draft
+domain: crm_legado
+owner: data-steward-crm-legado@vivo.example
+description: "Endereco do cliente no CRM legado. Capturado via CDC. Entidade TM Forum: GeographicAddress (TMF673)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/mssql.sql
+  table: crm_legado.tb_end_cli
+  tableFingerprint: sha256:3773fed56717c7f5176df121b6dd7c6c16904eefb0636af069a0e56e2ed80b9d  # sha256 do arquivo .avsc (schemas/crm_legado/legacy-customer-address-change-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/crm_legado/legacy-customer-address-change-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-crm-legado' e apenas o agrupamento logico/topico
+    schemaId: 21ce39c98685443f8491441b698fb308
+    compatibility: backward
+  properties:
+    - name: id_endereco
+      classification: internal
+    - name: cd_cli
+      classification: internal
+    - name: ds_logradouro
+      classification: confidential
+    - name: nr_logradouro
+      classification: confidential
+    - name: nm_cidade
+      classification: confidential
+    - name: sg_uf
+      classification: confidential
+    - name: nr_cep
+      classification: confidential
+    - name: tp_end
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-crm
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - ds_logradouro
+    - nr_logradouro
+    - nm_cidade
+    - sg_uf
+    - nr_cep
+support:
+  approval:
+    requiredReviewers: [data-steward-crm-legado]
+    humanInTheLoop: true

@@ -1,0 +1,51 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: billing.doc_fatura.v1
+name: DocFaturaCreateEvent
+version: 1.0.0
+status: draft
+domain: billing
+owner: data-steward-billing@vivo.example
+description: "Documento (PDF) de uma fatura e suas vias. Entidade TM Forum: Document, sub-recurso de CustomerBill (TMF678)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: billing.doc_fatura
+  tableFingerprint: sha256:610837becd676d81c7940c3b8b9fecaa1ed6164f934b94f9be28f9b0e5881088  # sha256 do arquivo .avsc (schemas/billing/doc-fatura-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/billing/doc-fatura-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-billing' e apenas o agrupamento logico/topico
+    schemaId: cfa3573774504361b8035e68e1077ce1
+    compatibility: backward
+  properties:
+    - name: id_doc
+      classification: internal
+    - name: id_fatura
+      classification: internal
+    - name: ds_url_pdf
+      classification: internal
+    - name: tp_via
+      classification: internal
+    - name: nr_versao
+      classification: internal
+    - name: dt_geracao
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-billing
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-billing]
+    humanInTheLoop: true

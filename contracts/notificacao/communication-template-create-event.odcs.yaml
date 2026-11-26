@@ -1,0 +1,47 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: notificacao.template.v1
+name: CommunicationTemplateCreateEvent
+version: 1.0.0
+status: draft
+domain: notificacao
+owner: data-steward-notificacao@vivo.example
+description: Modelo de comunicacao (e-mail ou SMS). Sem entidade TM Forum equivalente.
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: notificacao.template
+  tableFingerprint: sha256:5008b74c81d9cb06df965ca09449c71f751819e8e93442414fe784688e163b32  # sha256 do arquivo .avsc (schemas/notificacao/communication-template-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/notificacao/communication-template-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-notificacao' e apenas o agrupamento logico/topico
+    schemaId: 1753c270bf4b409a85251692c98f609e
+    compatibility: backward
+  properties:
+    - name: id_template
+      classification: internal
+    - name: nm_template
+      classification: internal
+    - name: tp_canal
+      classification: internal
+    - name: ds_corpo
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-notificacao
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-notificacao]
+    humanInTheLoop: true

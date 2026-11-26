@@ -1,0 +1,41 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: customer_care.tb_motivo_atend.v1
+name: MotivoAtendCreateEvent
+version: 1.0.0
+status: draft
+domain: customer_care
+owner: data-steward-customer-care@vivo.example
+description: "Dominio dos motivos de atendimento (tabela de referencia estatica). Entidade TM Forum: Dominio associado a PartyInteraction (sem TMF numerado)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ora1.sql
+  table: ATEND_PROD.TB_MOTIVO_ATEND
+  tableFingerprint: sha256:a8b095ac20b7c415fd9a492c28f701263a5ce6b1f0d717fe47a9b4d1476eb7dd  # sha256 do arquivo .avsc (schemas/customer_care/motivo-atend-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/customer_care/motivo-atend-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-customer-care' e apenas o agrupamento logico/topico
+    schemaId: d447d1f42643445ea4093cc4ea664b02
+    compatibility: backward
+  properties:
+    - name: CD_MOTIVO
+      classification: internal
+    - name: DS_MOTIVO
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-customer-ops
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-customer-care]
+    humanInTheLoop: true

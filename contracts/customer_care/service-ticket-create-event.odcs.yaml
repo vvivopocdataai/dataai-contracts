@@ -1,0 +1,63 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: customer_care.tb_atend.v1
+name: ServiceTicketCreateEvent
+version: 1.0.0
+status: draft
+domain: customer_care
+owner: data-steward-customer-care@vivo.example
+description: "Atendimento/ligacao do cliente, registrado como uma interacao com motivo, canal e desfecho. Entidade TM Forum: PartyInteraction (TMF683)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ora1.sql
+  table: ATEND_PROD.TB_ATEND
+  tableFingerprint: sha256:49d7cd23c2cbb6b27e657c436e0a921222c528c9f0eb12aa4bd8e1daa4fc4de3  # sha256 do arquivo .avsc (schemas/customer_care/service-ticket-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/customer_care/service-ticket-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-customer-care' e apenas o agrupamento logico/topico
+    schemaId: 3072d654efd4495b9262b31dda177f1b
+    compatibility: backward
+  properties:
+    - name: NR_PROTOC
+      classification: internal
+    - name: CD_CLI
+      classification: internal
+    - name: NR_CONTA
+      classification: internal
+    - name: NR_FATURA
+      classification: internal
+    - name: NR_PROTOC_2VIA
+      classification: internal
+    - name: CD_MOTIVO
+      classification: internal
+    - name: DS_CANAL
+      classification: internal
+    - name: DT_ABERT
+      classification: internal
+    - name: DT_FECH
+      classification: internal
+    - name: ST_ATEND
+      classification: internal
+    - name: DS_OBS
+      classification: confidential
+    - name: DS_END_INST
+      classification: confidential
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-customer-ops
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - DS_OBS
+    - DS_END_INST
+support:
+  approval:
+    requiredReviewers: [data-steward-customer-care]
+    humanInTheLoop: true

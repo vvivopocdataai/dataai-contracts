@@ -1,0 +1,51 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: billing.solic_segunda_via.v1
+name: BillCopyRequestedEvent
+version: 1.0.0
+status: draft
+domain: billing
+owner: data-steward-billing@vivo.example
+description: "Solicitacao de segunda via de fatura. Entidade TM Forum: PartyInteraction (TMF683)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: billing.solic_segunda_via
+  tableFingerprint: sha256:db3c6112e489f0507b91168ed4aa3fb130cda14aca62936b08adbf02d7d71c02  # sha256 do arquivo .avsc (schemas/billing/bill-copy-requested-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/billing/bill-copy-requested-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-billing' e apenas o agrupamento logico/topico
+    schemaId: 63be867b500c4d678f6b834da87b134d
+    compatibility: backward
+  properties:
+    - name: nr_protocolo
+      classification: internal
+    - name: dt_solicitacao
+      classification: internal
+    - name: ds_canal
+      classification: internal
+    - name: nr_fatura
+      classification: internal
+    - name: cd_cli
+      classification: internal
+    - name: st_solicitacao
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-billing
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-billing]
+    humanInTheLoop: true

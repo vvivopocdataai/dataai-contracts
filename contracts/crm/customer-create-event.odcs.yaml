@@ -1,0 +1,50 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: crm.customer.v1
+name: CustomerCreateEvent
+version: 1.0.0
+status: draft
+domain: crm
+owner: data-steward-crm@vivo.example
+description: "Papel de cliente assumido por um Individual no canal digital. Entidade TM Forum: Customer (TMF629)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: crm_digital.customer
+  tableFingerprint: sha256:52e41e1f8699e87bac1cfad2abc2929425c2afced5da4c7464dc43a3beb0f686  # sha256 do arquivo .avsc (schemas/crm/customer-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/crm/customer-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-crm' e apenas o agrupamento logico/topico
+    schemaId: 37c9ceb338c64376a146efaaa34e620b
+    compatibility: backward
+  properties:
+    - name: id
+      classification: internal
+    - name: party_id
+      classification: internal
+    - name: name
+      classification: confidential
+    - name: status
+      classification: internal
+    - name: valid_from
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-crm
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - name
+support:
+  approval:
+    requiredReviewers: [data-steward-crm]
+    humanInTheLoop: true

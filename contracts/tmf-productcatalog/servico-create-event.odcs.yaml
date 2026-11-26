@@ -1,0 +1,45 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: tmf-productcatalog.tb_serv.v1
+name: ServicoCreateEvent
+version: 1.0.0
+status: draft
+domain: tmf-productcatalog
+owner: data-steward-tmf-productcatalog@vivo.example
+description: "Oferta comercial: servico adicional avulso (dados, roaming e similares). Entidade TM Forum: ProductOffering (TMF620)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ora1.sql
+  table: ATEND_PROD.TB_SERV
+  tableFingerprint: sha256:9bcea5b3dd89df6de89e41d7ef81e2e3174172821a2d7eb6976f98e2204b55db  # sha256 do arquivo .avsc (schemas/tmf-productcatalog/servico-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/tmf-productcatalog/servico-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-tmf-productcatalog' e apenas o agrupamento logico/topico
+    schemaId: c8473b6895ad41109b11085bfc373ff1
+    compatibility: forward
+  properties:
+    - name: CD_SERV
+      classification: internal
+    - name: DS_SERV
+      classification: internal
+    - name: TP_SERV
+      classification: internal
+    - name: VL_SERV
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-tmf-productcatalog
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-tmf-productcatalog]
+    humanInTheLoop: true

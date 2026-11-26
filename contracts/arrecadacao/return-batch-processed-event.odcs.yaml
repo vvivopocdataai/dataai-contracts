@@ -1,0 +1,53 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: arrecadacao.lote_retorno.v1
+name: ReturnBatchProcessedEvent
+version: 1.0.0
+status: draft
+domain: arrecadacao
+owner: data-steward-arrecadacao@vivo.example
+description: Processamento de lote de arquivo de retorno bancario. Sem entidade TM Forum equivalente.
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: arrecadacao.lote_retorno
+  tableFingerprint: sha256:a74fbf386f838722e5234030e4cd77765f0c010950ef634dddf5cc4bf0c2c72a  # sha256 do arquivo .avsc (schemas/arrecadacao/return-batch-processed-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/arrecadacao/return-batch-processed-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-arrecadacao' e apenas o agrupamento logico/topico
+    schemaId: 634fd9d2689d4b63b6ded14918a9345a
+    compatibility: backward
+  properties:
+    - name: id_lote
+      classification: internal
+    - name: cd_banco
+      classification: internal
+    - name: nm_arquivo
+      classification: internal
+    - name: dt_prevista
+      classification: internal
+    - name: dt_recebida
+      classification: internal
+    - name: qt_registros
+      classification: internal
+    - name: st_lote
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-arrecadacao
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-arrecadacao]
+    humanInTheLoop: true

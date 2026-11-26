@@ -1,0 +1,53 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: crm.contact_medium.v1
+name: ContactMediumCreateEvent
+version: 1.0.0
+status: draft
+domain: crm
+owner: data-steward-crm@vivo.example
+description: "Meio de contato (e-mail ou celular) de um cliente do canal digital. Entidade TM Forum: ContactMedium (TMF629)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: crm_digital.contact_medium
+  tableFingerprint: sha256:6f7afd8251b11947581225af01bb1c7c36a2444cde4721edfa17ccf968d85030  # sha256 do arquivo .avsc (schemas/crm/contact-medium-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/crm/contact-medium-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-crm' e apenas o agrupamento logico/topico
+    schemaId: 23ee1797036a469ba66538dcedb94eac
+    compatibility: backward
+  properties:
+    - name: id_contato
+      classification: internal
+    - name: customer_id
+      classification: internal
+    - name: medium_type
+      classification: internal
+    - name: preferred
+      classification: internal
+    - name: email_address
+      classification: confidential
+    - name: phone_number
+      classification: confidential
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-crm
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - email_address
+    - phone_number
+support:
+  approval:
+    requiredReviewers: [data-steward-crm]
+    humanInTheLoop: true

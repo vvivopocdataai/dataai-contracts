@@ -1,0 +1,60 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: crm_legado.tb_cli.v1
+name: LegacyCustomerChangeEvent
+version: 1.0.0
+status: draft
+domain: crm_legado
+owner: data-steward-crm-legado@vivo.example
+description: "Cadastro unificado do cliente no CRM legado (pessoa fisica + papel de cliente). Capturado via CDC. Entidade TM Forum: Customer + Individual (TMF629/632)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/mssql.sql
+  table: crm_legado.tb_cli
+  tableFingerprint: sha256:cc59bd8ab0455aefe9243b2a87b823d870c8be1bd31f009f605b5fab401c68c1  # sha256 do arquivo .avsc (schemas/crm_legado/legacy-customer-change-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/crm_legado/legacy-customer-change-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-crm-legado' e apenas o agrupamento logico/topico
+    schemaId: 58187aba98654915a86ff4b9cd2dd5a1
+    compatibility: backward
+  properties:
+    - name: cd_cli
+      classification: internal
+    - name: nm_cli
+      classification: confidential
+    - name: nr_cpf
+      classification: confidential
+    - name: dt_nasc
+      classification: confidential
+    - name: ds_email
+      classification: confidential
+    - name: nr_tel
+      classification: confidential
+    - name: st_cli
+      classification: internal
+    - name: dt_cad
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-crm
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - nm_cli
+    - nr_cpf
+    - dt_nasc
+    - ds_email
+    - nr_tel
+support:
+  approval:
+    requiredReviewers: [data-steward-crm-legado]
+    humanInTheLoop: true

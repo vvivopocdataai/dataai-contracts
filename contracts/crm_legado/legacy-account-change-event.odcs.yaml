@@ -1,0 +1,47 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: crm_legado.tb_conta.v1
+name: LegacyAccountChangeEvent
+version: 1.0.0
+status: draft
+domain: crm_legado
+owner: data-steward-crm-legado@vivo.example
+description: "Conta do cliente no CRM legado. Capturado via CDC. Entidade TM Forum: BillingAccount (TMF666)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/mssql.sql
+  table: crm_legado.tb_conta
+  tableFingerprint: sha256:eeabde6afdcf6e7a6d6cb96deca2a4e505cb856a2eefa1b7d97cc79403d4a8f7  # sha256 do arquivo .avsc (schemas/crm_legado/legacy-account-change-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/crm_legado/legacy-account-change-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-crm-legado' e apenas o agrupamento logico/topico
+    schemaId: 586a352da2b841e9aad8e0207c8483c4
+    compatibility: backward
+  properties:
+    - name: nr_conta
+      classification: internal
+    - name: cd_cli
+      classification: internal
+    - name: dia_venc
+      classification: internal
+    - name: st_conta
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-crm
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-crm-legado]
+    humanInTheLoop: true

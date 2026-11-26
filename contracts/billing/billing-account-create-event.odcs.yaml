@@ -1,0 +1,43 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: billing.conta_cobranca.v1
+name: BillingAccountCreateEvent
+version: 1.0.0
+status: draft
+domain: billing
+owner: data-steward-billing@vivo.example
+description: "Conta de cobranca do cliente no sistema de faturamento. Entidade TM Forum: BillingAccount (TMF666)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: billing.conta_cobranca
+  tableFingerprint: sha256:c4de3ee0051ed497a3e85a6c41a0f8ee57db6881fdfc8354cad05a50db0052ed  # sha256 do arquivo .avsc (schemas/billing/billing-account-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/billing/billing-account-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-billing' e apenas o agrupamento logico/topico
+    schemaId: 73ece613b44a4e04b3b072f7f2470401
+    compatibility: backward
+  properties:
+    - name: id_conta
+      classification: internal
+    - name: id_conta_crm
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-billing
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-billing]
+    humanInTheLoop: true

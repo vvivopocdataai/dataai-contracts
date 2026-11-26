@@ -1,0 +1,75 @@
+name: ci-update-catalog
+
+# Dispara no merge em main deste repo (contratos). Regenera docs/contract-catalog.md
+# lendo os 26 ODCS locais + o manifesto de schemaIds do repo dataai-pubsub (checkout
+# cruzado, somente leitura via deploy key dedicada).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+
+permissions:
+  contents: write   # necessario para commitar o indice atualizado neste repo
+
+env:
+  PUBSUB_REPO: vvivopocdataai/dataai-pubsub
+
+jobs:
+  update-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout deste repo (contracts)
+        uses: actions/checkout@v4
+
+      - name: Checkout do repo dataai-pubsub (manifesto de schemaIds, so leitura)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.PUBSUB_REPO }}
+          path: pubsub
+          ssh-key: ${{ secrets.PUBSUB_DEPLOY_KEY }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install --quiet pyyaml
+
+      - name: Atualizar docs/contract-catalog.md a partir dos contratos + manifesto
+        run: |
+          python3 - <<'PYEOF'
+          import glob, json, yaml, os
+
+          manifest = {}
+          if os.path.exists("pubsub/schema-registry-manifest.json"):
+              with open("pubsub/schema-registry-manifest.json") as fh:
+                  manifest = json.load(fh)
+
+          rows = []
+          for f in sorted(glob.glob("contracts/**/*.odcs.yaml", recursive=True)):
+              with open(f) as fh:
+                  c = yaml.safe_load(fh)
+              avsc = c.get("schema", {}).get("file", "")
+              fqn = next((k for k, v in manifest.items() if v.get("file", "").endswith(avsc)), None)
+              schema_id = manifest.get(fqn, {}).get("schemaId", "pendente")
+              rows.append((c["domain"], c["name"], c["status"], c["version"], schema_id, f))
+
+          os.makedirs("docs", exist_ok=True)
+          with open("docs/contract-catalog.md", "w") as fh:
+              fh.write("# Contract Catalog Index\n\n")
+              fh.write("Gerado automaticamente por ci-update-catalog. Nao editar manualmente.\n\n")
+              fh.write("| Dominio | Contrato | Status | Versao | Schema ID | Arquivo |\n")
+              fh.write("|---|---|---|---|---|---|\n")
+              for domain, name, status, version, schema_id, f in rows:
+                  fh.write(f"| {domain} | {name} | {status} | {version} | `{schema_id}` | `{f}` |\n")
+          PYEOF
+
+      - name: Commit do indice atualizado (se houver mudanca)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/contract-catalog.md
+          git diff --cached --quiet || git commit -m "chore: atualiza contract-catalog.md [skip ci]"
+          git push

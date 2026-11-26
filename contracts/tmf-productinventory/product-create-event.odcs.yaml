@@ -1,0 +1,64 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: tmf-productinventory.tb_assin.v1
+name: ProductCreateEvent
+version: 1.0.0
+status: draft
+domain: tmf-productinventory
+owner: data-steward-tmf-productinventory@vivo.example
+description: "Linha do cliente (assinatura movel): numero, plano, DDD, portabilidade, ativacao e cancelamento. Entidade TM Forum: Product (TMF637)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ora1.sql
+  table: ATEND_PROD.TB_ASSIN
+  tableFingerprint: sha256:ad2e9e75be2b30a440944680c43820dedb9265c4fffa050a210d9945eaad1fe2  # sha256 do arquivo .avsc (schemas/tmf-productinventory/product-create-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/tmf-productinventory/product-create-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-tmf-productinventory' e apenas o agrupamento logico/topico
+    schemaId: 1c784d92c9204d638084c4508058c41f
+    compatibility: backward
+  properties:
+    - name: CD_ASSIN
+      classification: internal
+    - name: CD_CLI
+      classification: internal
+    - name: NR_CONTA
+      classification: internal
+    - name: NR_MSISDN
+      classification: confidential
+    - name: CD_PLANO
+      classification: internal
+    - name: CD_DDD
+      classification: internal
+    - name: FL_PORTAB
+      classification: internal
+    - name: DT_ATIV
+      classification: internal
+    - name: DT_CANC
+      classification: internal
+    - name: ST_ASSIN
+      classification: internal
+    - name: CD_FILIAL_LEG
+      classification: internal
+    - name: NR_LOTE_MIGR
+      classification: internal
+    - name: DT_ATUALIZACAO
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-tmf-productinventory
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields:
+    - NR_MSISDN
+support:
+  approval:
+    requiredReviewers: [data-steward-tmf-productinventory]
+    humanInTheLoop: true

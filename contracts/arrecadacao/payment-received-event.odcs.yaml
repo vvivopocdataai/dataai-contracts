@@ -1,0 +1,59 @@
+apiVersion: v3.0.0
+kind: DataContract
+id: arrecadacao.pagamento.v1
+name: PaymentReceivedEvent
+version: 1.0.0
+status: draft
+domain: arrecadacao
+owner: data-steward-arrecadacao@vivo.example
+description: "Pagamento recebido e sua baixa contra uma fatura. Entidade TM Forum: Payment (TMF676)."
+sourceModelRef:
+  repo: vivo-dataai-poc
+  path: ddl/ps.sql
+  table: arrecadacao.pagamento
+  tableFingerprint: sha256:42b66fc771b4124d92e65a324a04c63df12065f3c52902e1e74b5dac456a36b7  # sha256 do arquivo .avsc (schemas/arrecadacao/payment-received-event.avsc)
+schema:
+  physicalType: avro
+  repo: vvivopocdataai/dataai-pubsub  # schema fisico vive no repo dataai-pubsub, nao neste repo de contratos
+  file: schemas/arrecadacao/payment-received-event.avsc  # caminho dentro do repo acima
+  registry:
+    type: azure-event-hubs-schema-registry
+    namespace: eh-dataai-vivopoc
+    schemaGroup: application-schemas  # unico grupo possivel no tier Standard; 'sg-arrecadacao' e apenas o agrupamento logico/topico
+    schemaId: b7585c5fd16d4b879bf4dc37b2413c0d
+    compatibility: backward
+  properties:
+    - name: id_pagamento
+      classification: internal
+    - name: nr_nsu
+      classification: internal
+    - name: id_conta
+      classification: internal
+    - name: nr_fatura
+      classification: internal
+    - name: vl_pago
+      classification: internal
+    - name: dt_pagamento
+      classification: internal
+    - name: dt_baixa
+      classification: internal
+    - name: st_pagamento
+      classification: internal
+    - name: id_forma
+      classification: internal
+    - name: id_lote
+      classification: internal
+    - name: dt_atualizacao
+      classification: internal
+servers:
+  - type: kafka
+    bootstrapServers: eh-dataai-vivopoc.servicebus.windows.net:9093
+    topic: evt-arrecadacao
+    format: avro
+security:
+  authentication: entra-id-oauth2
+  piiFields: []
+support:
+  approval:
+    requiredReviewers: [data-steward-arrecadacao]
+    humanInTheLoop: true
