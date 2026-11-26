@@ -104,12 +104,27 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Dry-run de registro no Schema Registry (nao incrementa versao se identico)
+      - name: Dry-run de registro no Schema Registry -- apenas dos contratos alterados nesta PR
         run: |
           python3 - <<'PYEOF'
-          import json, glob, sys, subprocess
+          import json, subprocess, sys, yaml
           from azure.identity import AzureCliCredential
           from azure.schemaregistry import SchemaRegistryClient
+
+          # So valida os schemas cujos contratos ODCS mudaram nesta PR -- evita
+          # re-tentar registrar os 25 contratos ja estaveis a cada PR (o que
+          # bateria sempre no limite de 25 schemas/grupo do tier Standard para
+          # qualquer PR, mesmo as que nao tocam no schema pendente).
+          base = "origin/${{ github.event.pull_request.base.ref }}"
+          diff = subprocess.run(
+              ["git", "diff", "--name-only", f"{base}...HEAD", "--", "contracts/"],
+              capture_output=True, text=True, check=True,
+          ).stdout.splitlines()
+          changed_contracts = [f for f in diff if f.endswith(".odcs.yaml")]
+
+          if not changed_contracts:
+              print("Nenhum contrato alterado nesta PR -- nada para validar no Schema Registry.")
+              sys.exit(0)
 
           credential = AzureCliCredential()
           client = SchemaRegistryClient(
@@ -118,8 +133,11 @@ jobs:
           )
           failed = False
           with client:
-              for f in sorted(glob.glob("pubsub/schemas/**/*.avsc", recursive=True)):
-                  with open(f) as fh:
+              for contract_path in changed_contracts:
+                  with open(contract_path) as fh:
+                      contract = yaml.safe_load(fh)
+                  avsc_path = f'pubsub/{contract["schema"]["file"]}'
+                  with open(avsc_path) as fh:
                       definition = fh.read()
                       data = json.loads(definition)
                   fqn = f'{data["namespace"]}.{data["name"]}'
@@ -130,9 +148,9 @@ jobs:
                           definition=definition,
                           format="Avro",
                       )
-                      print(f"OK   {fqn} -> schemaId={props.id} version={props.version}")
+                      print(f"OK   {contract_path} ({fqn}) -> schemaId={props.id} version={props.version}")
                   except Exception as e:
-                      print(f"FAIL {fqn}: {type(e).__name__}: {e}")
+                      print(f"FAIL {contract_path} ({fqn}): {type(e).__name__}: {e}")
                       failed = True
           sys.exit(1 if failed else 0)
           PYEOF
