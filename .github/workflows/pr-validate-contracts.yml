@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout deste repo (contracts)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historico completo, necessario para o gitleaks-action
 
       - name: Checkout do repo dataai-pubsub (schemas fisicos, so leitura)
         uses: actions/checkout@v4
